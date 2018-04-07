@@ -10,7 +10,9 @@ import scrapy
 
 class OlxItem(scrapy.Item):
     # define the fields for your item here like:
+    id = scrapy.Field()
     title = scrapy.Field()
     details = scrapy.Field()
     price = scrapy.Field()
+    state = scrapy.Field()
     url = scrapy.Field()

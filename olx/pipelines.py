@@ -10,10 +10,10 @@ from scrapy.exceptions import DropItem
 
 class KeywordsPipeline(object):
 
-    KEYWORDS = ["garmin", "fenix"]
+    KEYWORDS = ["ceas", "smart", "watch", "forerunner ", "235"]
 
     def process_item(self, item, spider):
         info = (item['title'] + " " + item['details']).lower()
-        if all(k in info for k in KeywordsPipeline.KEYWORDS):
+        if any(k in info for k in KeywordsPipeline.KEYWORDS):
             return item
         raise DropItem

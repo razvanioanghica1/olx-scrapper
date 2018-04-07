@@ -9,23 +9,39 @@ class ElectronicsSpider(CrawlSpider):
     name = "electronics"
     allowed_domains = ["www.olx.ro"]
     start_urls = [
-        'https://www.olx.ro/hobby-sport-turism/echipamente-sportive-si-turism/q-fenix/',
+        'https://www.olx.ro/hobby-sport-turism/echipamente-sportive-si-turism/q-forerunner-235/',
     ]
 
     rules = (
         Rule(LinkExtractor(restrict_css='.pageNextPrev')),
-        Rule(LinkExtractor(allow=('oferta/',)),
-             callback="parse_item",
-             follow=False),)
+    )
 
-    def parse_item(self, response):
-        title = response.css('.offer-titlebox > h1::text').extract()[0].strip()
-        details = response.css('.descriptioncontent > .clr > p::text').extract()[0].strip()
-        price = response.css('.pricelabel > strong::text').extract()[0]
+    def parse(self, response):
+        rows = response.css('table[summary="Anunt"]')
+        for row in rows:
+            title = (
+                row.css('h3>a.detailsLink>strong::text').extract_first() or
+                row.css('h3>a.detailsLinkPromoted>strong::text').extract_first()
+            ).strip()
+            price = row.css('.price > strong::text').extract_first().strip()
+            href = row.css('h3>a.detailsLinkPromoted::attr(href),a.detailsLink::attr(href)').extract_first()
+            id = href.split('-')[-1].split('.')[0]
 
-        item = OlxItem()
-        item['title'] = title
+            item = OlxItem()
+            item['id'] = id
+            item['title'] = title
+            item['price'] = price
+            item['url'] = href
+            yield scrapy.Request(href, callback=self.parse_detail_page, meta={'item': item})
+
+    def parse_detail_page(self, response):
+        details = response.css('.descriptioncontent > .clr > p::text').extract_first().strip()
+        state = response\
+            .css('.descriptioncontent > .details')\
+            .xpath('//th[contains(text(),"Stare")]/../td/strong/a/text()')\
+            .extract_first().strip()
+
+        item = response.meta.get('item')
         item['details'] = details
-        item['price'] = price
-        item['url'] = response.url
+        item['state'] = state
         yield item
